@@ -136,7 +136,7 @@ with col :
     st.markdown("""
                 ***PSGOUV-CI 2023*** — Données du Programme Social du Gouvernement(PSGOUV) - Les réalisations en 2023
 
-                Cette application vient pour en lumière les activités du PSGOUV 2023 en Côte d'Ivoire.
+                Cette application vient pour mettre en lumière les activités du PSGOUV 2023 en Côte d'Ivoire.
 
                 :material/copyright: Réalisé par [***Timothée AKANJI***](https://www.linkedin.com/in/timothee-olanyi-akanji/ "Expertise Data | BI | Python & SQL Expert | Cloud | Santé & Humanitaire Afrique") 
         """, text_alignment="center")
