@@ -1,143 +1,178 @@
+import plotly.express as px
 import streamlit as st
-import pandas as pd
 
-from utils import data, dim, count_col, top_N_par_col, sum_actions_par_col, nbre_program, nbre_actions_effectuee, most_benefit
+from config.css import MAIN_CSS
+from config.settings import APP_ICON, APP_TITLE, COLUMNS, MENU_ITEMS
+from data_loader import load_data
+from utils import (
+    count_unique,
+    sum_by_col,
+    top_beneficiary,
+    total_actions,
+    total_programs,
+    treemap_data,
+)
 
+# ── Page config — must be the very first Streamlit call ───────────────────────
+st.set_page_config(
+    page_title=APP_TITLE,
+    page_icon=APP_ICON,
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items=MENU_ITEMS,
+)
 
-# CSS de base 
-st.markdown("""
-<style>
-    .main-header {
-        padding: 1rem 0;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        text-align: center;
-        margin-bottom: 2rem;
-        border-radius: 10px;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.markdown(MAIN_CSS, unsafe_allow_html=True)
 
+# ── Data ──────────────────────────────────────────────────────────────────────
+df = load_data()
 
-# Interface principale
-st.markdown(f"""
-<div class="main-header">
-    <h1>🏠 Programme Social du Gouvernement <br> (PSGOUV) 2023 </h1>
-</div>
-""", unsafe_allow_html=True)
+C = COLUMNS  # local alias for readability
 
-st.set_page_config(page_title="Accueil | PSGOUV 2023",
-                   page_icon="🚀",
-                   layout="wide",
-                   initial_sidebar_state= "expanded",
-                    menu_items= {
-                        "Get help" : "https://www.linkedin.com/in/timothee-olanyi-akanji/",
-                        "Report a Bug" : "https://github.com/TimFirst3005/PSGOUV-CI-2023-ANALYSIS/issues",                        
-                        "About" : "Cette application Web met en lumière les programmes de l'état de Côte d'Ivoire dans le cadre du **PSGOUV 2023** ainsi que les actions ménées lors de la réalisation de chacun de ces programmes."
-                    }
-                   )
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.title("Navigation")
+    st.markdown(
+        "Explorez les réalisations du **PSGOUV 2023** à travers les indicateurs "
+        "clés et les visualisations interactives."
+    )
+    st.divider()
+    st.caption(f"Données : {total_programs(df)} enregistrements chargés.")
 
+# ── Header ────────────────────────────────────────────────────────────────────
+st.markdown(
+    """
+    <div class="main-header">
+        <h1>🇨🇮 Programme Social du Gouvernement (PSGOUV) 2023</h1>
+        <p>Tableau de bord des réalisations — Côte d'Ivoire</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-st.sidebar.title("Aperçu Global")
-#st.sidebar.selectbox(
-#    "Filtres",
-#    ["Région","Type d'action"],
-#    label_visibility= "hidden",
-#    accept_new_options=False
-#)
+st.markdown(
+    """
+    <div class="intro-text">
+    Le jeu de données porte sur les réalisations de l'<strong>État de Côte d'Ivoire</strong>
+    dans le cadre du <strong>PSGOUV</strong> (Programme Social du Gouvernement).
+    Il couvre des domaines essentiels tels que l'hydraulique, la protection sociale,
+    la santé et l'électricité, offrant une vision globale des progrès réalisés en 2023.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-
-st.markdown("""
-            Le jeu de données utilisé porte sur les réalisations de **l'Etat de Côte d'Ivoire** dans le cadre du **PSGOUV (Programme Social du Gouvernement)**. 
-            Cette application est un outil précieux pour évaluer l'impact des initiatives gouvernementales sur la vie des populations en Côte d'Ivoire. 
-            Elle couvre des domaines essentiels tels que l'hydraulique, la protection sociale, la santé, et l'électricité, offrant une vision globale 
-            des progrès réalisés dans ces secteurs clés. Les données détaillées sur les PMH, les programmes de filets sociaux, les interventions en matière de santé, 
-            et l'électrification des localités montrent l'engagement du gouvernement à améliorer les conditions de vie et à promouvoir le bien-être des citoyens. \n
-""", unsafe_allow_html=True)
-
-
-# Overview
+# ── Section 1 : Aperçu Global ─────────────────────────────────────────────────
 st.markdown("### 👁️ Aperçu Global des Programmes")
 
-row = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="center")
-with row:
+row1 = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="center")
+with row1:
+    st.metric("Programmes réalisés", total_programs(df), border=True)
+    st.metric("Actions menées", total_actions(df), format="localized", border=True)
+
+row2 = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="center")
+with row2:
     st.metric(
-        "Nombre de Programmes réalisés", nbre_program, border=True
-    )
-
-    st.metric(
-        "Nombre d'actions ménées", nbre_actions_effectuee, format='localized', border=True
-    )
-
-
-row = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="center")
-with row:
-    st.metric(
-        "Districts impactés", count_col("District"), border=True, chart_data=sum_actions_par_col("District"), chart_type="bar"
-    )
-
-    st.metric(
-        "Régions impactées", count_col("Région"), border=True, chart_data=sum_actions_par_col("Région"), chart_type="bar"
-    )
-
-    st.metric(
-        "Catégories de Programme", count_col("Catégorie"), border=True, chart_data=sum_actions_par_col("Catégorie"), chart_type="area"
-    )
-
-    st.metric(
-        "Sous-catégories de Programme", count_col("Sous-catégorie"), border=True, chart_data=sum_actions_par_col("Sous-catégorie"), chart_type="area"
-    )
-
-
-st.markdown("### 🔝 TOP_N (Actions menées) ")
-row = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="center")
-with row:
-    st.metric(
-        "Top District Bénéficiaire", most_benefit("District")[1], delta=most_benefit("District")[0], format="localized", delta_arrow="off", border=True
+        "Districts impactés",
+        count_unique(df, C["district"]),
+        border=True,
+        chart_data=sum_by_col(df, C["district"]),
+        chart_type="bar",
     )
     st.metric(
-        "Top Région Bénéficiaire", most_benefit("Région")[1], delta=most_benefit("Région")[0], format="localized", delta_arrow="off", border=True
+        "Régions impactées",
+        count_unique(df, C["region"]),
+        border=True,
+        chart_data=sum_by_col(df, C["region"]),
+        chart_type="bar",
     )
     st.metric(
-        "Top Catégorie d'action", most_benefit("Catégorie")[1], delta=most_benefit("Catégorie")[0], format="localized", delta_arrow="off", border=True
+        "Catégories de programme",
+        count_unique(df, C["category"]),
+        border=True,
+        chart_data=sum_by_col(df, C["category"]),
+        chart_type="area",
     )
     st.metric(
-        "Top Sous-Catégorie d'action", most_benefit("Sous-catégorie")[1], delta=most_benefit("Sous-catégorie")[0], format="localized", delta_arrow="off", border=True
+        "Sous-catégories",
+        count_unique(df, C["subcategory"]),
+        border=True,
+        chart_data=sum_by_col(df, C["subcategory"]),
+        chart_type="area",
     )
 
+# ── Section 2 : Top Bénéficiaires ────────────────────────────────────────────
+st.markdown("### 🔝 Top Bénéficiaires par Dimension")
 
-st.markdown("### 🌍 Repartition Géographique des action")
-st.map( size="Valeur")
+top_dims = [
+    ("Top District", "district"),
+    ("Top Région", "region"),
+    ("Top Catégorie", "category"),
+    ("Top Sous-Catégorie", "subcategory"),
+]
 
+row3 = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="center")
+with row3:
+    for label, col_key in top_dims:
+        name, value = top_beneficiary(df, C[col_key])
+        st.metric(
+            label,
+            name,
+            delta=value,
+            format="localized",
+            delta_arrow="off",
+            border=True,
+        )
 
-st.markdown("### 📊 Repartition des Actions ménées")
+# ── Section 3 : Répartition Géographique ─────────────────────────────────────
+st.markdown("### 🌍 Répartition Géographique des Actions")
 
+geo_df = treemap_data(df)
+fig_treemap = px.treemap(
+    geo_df,
+    path=[px.Constant("Côte d'Ivoire"), C["district"], C["region"], C["category"]],
+    values=C["value"],
+    color=C["value"],
+    color_continuous_scale="Purples",
+    hover_data={C["value"]: ":,.0f"},
+)
+fig_treemap.update_layout(
+    margin=dict(t=10, l=0, r=0, b=0),
+    height=480,
+    coloraxis_colorbar=dict(title="Actions"),
+)
+fig_treemap.update_traces(textinfo="label+value")
+st.plotly_chart(fig_treemap, use_container_width=True)
 
-row = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="center")
-with row:
-    st.markdown("##### Repartition \n ##### par Régions")
-    st.bar_chart(sum_actions_par_col("Région"))
+# ── Section 4 : Répartition des Actions ──────────────────────────────────────
+st.markdown("### 📊 Répartition des Actions Menées")
 
-row = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="center")
-with row:
-    st.bar_chart(sum_actions_par_col("District"))
-    st.markdown("##### Repartition \n ##### par District")
+row4 = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="center")
+with row4:
+    st.markdown("##### Par Région")
+    st.bar_chart(sum_by_col(df, C["region"]))
 
-row = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="distribute")
-with row:
-    st.bar_chart(sum_actions_par_col("Catégorie"), horizontal=True)
-    st.bar_chart(sum_actions_par_col("Sous-catégorie"), horizontal=True)
+row5 = st.container(horizontal=True, border=True, width="stretch", vertical_alignment="center")
+with row5:
+    st.bar_chart(sum_by_col(df, C["district"]))
+    st.markdown("##### Par District")
 
+row6 = st.container(
+    horizontal=True, border=True, width="stretch", vertical_alignment="distribute"
+)
+with row6:
+    st.bar_chart(sum_by_col(df, C["category"]), horizontal=True)
+    st.bar_chart(sum_by_col(df, C["subcategory"]), horizontal=True)
 
+# ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("---")
-    
-_,col,_ = st.columns([1,98,1], vertical_alignment="center", gap="large")
-with col :
-    st.markdown("""
-                ***PSGOUV-CI 2023*** — Données du Programme Social du Gouvernement(PSGOUV) - Les réalisations en 2023
+_, col, _ = st.columns([1, 98, 1], vertical_alignment="center", gap="large")
+with col:
+    st.markdown(
+        """
+        ***PSGOUV-CI 2023*** — Données du Programme Social du Gouvernement — Réalisations 2023
 
-                Cette application vient pour mettre en lumière les activités du PSGOUV 2023 en Côte d'Ivoire.
-
-                :material/copyright: Réalisé par [***Timothée AKANJI***](https://www.linkedin.com/in/timothee-olanyi-akanji/ "Expertise Data | BI | Python & SQL Expert | Cloud | Santé & Humanitaire Afrique") 
-        """, text_alignment="center")
-    
+        :material/copyright: Réalisé par [***Timothée AKANJI***](https://www.linkedin.com/in/timothee-olanyi-akanji/ "Data | BI | Python & SQL | Cloud | Santé & Humanitaire Afrique")
+        """,
+        text_alignment="center",
+    )

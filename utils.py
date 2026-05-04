@@ -1,45 +1,47 @@
 import pandas as pd
 
-from data_loader import load_data
+from config.settings import COLUMNS
+
+_V = COLUMNS["value"]
 
 
-data = load_data()
-
-# Tables de Dimension 
-def dim(col):
-    dim = data[col].unique()
-    return dim
+def total_programs(df: pd.DataFrame) -> int:
+    return len(df)
 
 
-# KPIs
-nbre_program = len(data)
-nbre_actions_effectuee = data.Valeur.sum()
-
-# Fonction pour conpter le nombre valeurs uniques pour une colonne donnée
-def count_col(col):
-    nbre_val = len(dim(col))
-    return nbre_val
-
-# Fonction pour faire des aggrégation
-def top_N_par_col(cols:list):
-    top_N = data.groupby(cols)["Valeur"].sum().sort_values(ascending=False)
-    return top_N
+def total_actions(df: pd.DataFrame) -> float:
+    return df[_V].sum()
 
 
-# Fonction de repartition du nombre d'actions par champ
-def sum_actions_par_col(col):
-    sum_actions = data.groupby([col])["Valeur"].sum()
-    return sum_actions
+def count_unique(df: pd.DataFrame, col: str) -> int:
+    return df[col].nunique()
 
 
-# Col ayant le plus bénéficié d'action
-def most_benefit(col):
-    val = data.groupby(col)["Valeur"].sum().sort_values(ascending=False)
-    if val.index[0]!="Autres":
-        return (val.index[0], val.iloc[0])
-    else:
-        return (val.index[1], val.iloc[1])
+def sum_by_col(df: pd.DataFrame, col: str) -> pd.Series:
+    return df.groupby(col)[_V].sum().sort_values(ascending=False).rename(_V)
 
-most_actions_par_region = data.groupby(["Région"])["Valeur"].sum().sort_values(ascending=False)
-#most_actions_par_region = data.groupby(["Région", "Catégorie"])["Valeur"].sum()
-#filtre = 
+
+def top_n_by_cols(df: pd.DataFrame, cols: list[str], n: int = 10) -> pd.DataFrame:
+    return (
+        df.groupby(cols)[_V]
+        .sum()
+        .sort_values(ascending=False)
+        .head(n)
+        .reset_index()
+    )
+
+
+def top_beneficiary(df: pd.DataFrame, col: str) -> tuple[str, float]:
+    ranked = df.groupby(col)[_V].sum().sort_values(ascending=False)
+    for name, value in ranked.items():
+        if str(name).strip().lower() != "autres":
+            return (str(name), float(value))
+    return (str(ranked.index[0]), float(ranked.iloc[0]))
+
+
+def treemap_data(df: pd.DataFrame) -> pd.DataFrame:
+    return (
+        df.groupby([COLUMNS["district"], COLUMNS["region"], COLUMNS["category"]])[_V]
+        .sum()
+        .reset_index()
+    )
